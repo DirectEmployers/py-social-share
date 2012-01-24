@@ -1,0 +1,31 @@
+# Compiled Source
+*.pyc
+
+# Editor aritfacts
+*~
+*-
+*#
+*wpr
+*wpu
+
+
+# Log Files
+*.log
+logfile
+
+# Database files
+*.sql
+*.db
+*.sqlite
+
+# Secret Stuff
+secrets.*
+
+# OS generated
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
+
+# Django stuff that shouldn't be in the repo
+local_settings.py
