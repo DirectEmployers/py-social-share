@@ -21,6 +21,6 @@ header is left intact.
 
 Files:
 ------
-GNU GPL version 2.0: gnu-gpl-v2.0.txt
-GNU GPL version 3.0: gnu-gpl-v3.0.txt
-MIT License: mit-license.txt
+ - GNU GPL version 2.0: gnu-gpl-v2.0.txt
+ - GNU GPL version 3.0: gnu-gpl-v3.0.txt
+ - MIT License: mit-license.txt

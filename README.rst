@@ -6,6 +6,6 @@ require a web framework, but can be used by the framework of your choice.
 
 Requires
 --------
-tweepy
-facepy
-python-linkedin
+ - tweepy
+ - facepy
+ - python-linkedin
