@@ -86,9 +86,9 @@ class TestBackends(unittest2.TestCase):
                            image_url=self.image_url,
                            image_url_title=self.url_title,
                            image_url_description=self.image_url_description)
-        with self.assertRaises(ShareError):
+        with self.assertRaises(ShareError) as cm:
             api.send_message()
-
+        self.assertEqual(cm.exception.msg, 'No recipients to send to.')
 
 if __name__ == '__main__':
     unittest2.main()
