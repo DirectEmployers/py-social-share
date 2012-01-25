@@ -12,6 +12,15 @@ backends.py -- implements a more universal social api that abstracts away the
 
 backends = {}
 
+class ShareError(Exception):
+    """Used for social share fails."""
+    def __init__(self, msg):
+        self.msg=msg
+        return
+
+    def __str__(self):
+        return "ShareError", self.message or None
+
 def register_share_backend(network, class_name):
     """Registers a new social sharing backend
     
@@ -70,7 +79,7 @@ class ShareBackend(object):
         # truncate tweet if it is too long
         self.tweet = tweet[0:160].strip()
         self.url = u'%s' % url.strip()
-        self.url_title = url_title.strip()
+        self.url_title = url_title
         self.url_description = url_description.strip()
         self.image_url = u'%s' % image_url.strip()
         self.image_url_title = image_url_title.strip()
@@ -78,7 +87,8 @@ class ShareBackend(object):
         
     def share(self):
         """ Executes social network share""" 
-        self._share()
+        result = self._share()
+        return result
 
     def send_message(self):
         """Sends message using social network. 
@@ -88,8 +98,9 @@ class ShareBackend(object):
         """
         # Make sure we have recipients. If not, blow up.
         if self.to == []:
-            raise ShareError, "No recipients to send to."
-        self._send_message()
+            raise ShareError("No recipients to send to.")
+        result = self._send_message()
+        return result
         
     def _send_message(self):
         """Sends message: Like the goggles, does nothing."""
@@ -115,13 +126,12 @@ class DebugBackend(ShareBackend):
     print_message: True writes to STDIO. False doesn't print
     """
     
-    def __init__(self, print_message=False):
+    def __init__(self, *args, **kwargs):
         super(DebugBackend, self).__init__(*args, **kwargs)
-        self.print_message = print_message
 
-    def _share(self):
+    def _share(self, print_message=False):
         """Does social share"""
-        if self.print_message:
+        if print_message:
             print "consumer token ", self.consumer_token
             print "consumer secret", self.consumer_secret
             print "headline:      ",self.headline
@@ -129,12 +139,15 @@ class DebugBackend(ShareBackend):
             print "message:       ", self.message or None
             print "url:           ", self.url or None
             print "image_url:     ", self.image_url or None
-        m = [self.headline, self.excerpt, self.message, self.url, self.tweet,
-            self.url_title, self.url_description, self.image_url)
+        m = [self.api_token, self.api_secret, self.consumer_secret,
+             self.consumer_token, self.headline, self.excerpt, self.message, 
+             self.url, self.tweet, self.url_title, self.url_description, 
+             self.image_url]
+        return m
 
-    def _send_message(self):
+    def _send_message(self, print_message=False):
         """sends message"""
-        if self.print_message:
+        if print_message:
             print "consumer token  ", self.consumer_token
             print "consumer secret ", self.consumer_secret
             for t in self.to:
@@ -143,7 +156,11 @@ class DebugBackend(ShareBackend):
             print "message:   ",self.message or None
             print "url:       ",self.url or None
             print "image_url: ",self.image_url or None        
-    
+        m = [self.api_token, self.api_secret, self.consumer_secret,
+                     self.consumer_token, self.headline, self.excerpt, self.message, 
+                     self.url, self.tweet, self.url_title, self.url_description, 
+                     self.image_url,self.to]
+        return m        
 
 register_share_backend('debug', 'DebugBackend')
 
