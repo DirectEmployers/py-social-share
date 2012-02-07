@@ -1,8 +1,21 @@
 """
 socialshare -- module for sharing to multiple social networks at one time
-"""
-from backends import *
 
+Step 1: Register your backends by calling register_share_backend
+"""
+
+import backends
+
+available_backends ={}
+
+def register_share_backend(network, class_name):
+    """Registers a new social sharing backend
+    
+    Parameters:
+    network -- name of the social network in lowercase. Something like twitter.
+    class_name -- the class that implements the share api"""
+    available_backends[network] = class_name
+        
 __version_info__ = {
     'major': 0,
     'minor': 2,
@@ -65,12 +78,12 @@ class Share(object):
         self.image_url_description = image_url_description        
         self.shares = shares
         
-    def bulk_share():
+    def do_bulk_share(self):
         """Shares using all backends in self.shares."""
         for share in self.shares:
-            c_t = self.share['consumer_token'] or consumer_token
-            c_s = self.share['consumer_secret'] or consumer_secret
-            class_ = getattr(backends, backends[share['network']], {})
+            c_t = share['consumer_token'] or consumer_token
+            c_s = share['consumer_secret'] or consumer_secret
+            class_ = getattr(backends, available_backends[share['network']])
             api = class_(self.api_token, self.api_secret, 
                          consumer_token=c_t, consumer_secret=c_s,
                          message=self.message,
@@ -81,6 +94,7 @@ class Share(object):
                          url_description=self.url_description, 
                          image_url=self.image_url, image_url_title=self.image_url_title, 
                          image_url_description=self.image_url_description)
-            api.share()
+            return api.share()
+            
        
     

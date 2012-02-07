@@ -8,9 +8,10 @@ backends.py -- implements a more universal social api that abstracts away the
                Supported networks: Facebook, Twitter, LinkedIn and Debug.
                
                About the debug backend: it writes to stdio. 
+               
 """
 
-backends = {}
+
 
 class ShareError(Exception):
     """Used for social share fails."""
@@ -20,14 +21,6 @@ class ShareError(Exception):
 
     def __str__(self):
         return "ShareError", self.message or None
-
-def register_share_backend(network, class_name):
-    """Registers a new social sharing backend
-    
-    Parameters:
-    network -- name of the social network in lowercase. Something like twitter.
-    class_name -- the class that implements the share api"""
-    backends[network] = class_name
 
 class ShareBackend(object):
     """Base class for share backends."""
@@ -69,7 +62,9 @@ class ShareBackend(object):
         url -- the url being shared
         url_title -- the title of the url
         url_description -- description of the URL
-        image_url -- 
+        image_url -- the url being shared
+        image_url_title -- the title of the url
+        image_url_description -- description of the URL
         
         """
         self.message = message.strip()
@@ -162,8 +157,6 @@ class DebugBackend(ShareBackend):
                      self.image_url,self.to]
         return m        
 
-register_share_backend('debug', 'DebugBackend')
-
 class LinkedInBackend(ShareBackend):
     """Implements LinedIn Sharing using python-linkedin.
 
@@ -222,7 +215,7 @@ class LinkedInBackend(ShareBackend):
         if result == False:
             raise ShareError, self.api.get_error()
 
-register_share_backend('linkedin','LinkedInBackend')
+#register_share_backend('linkedin','LinkedInBackend')
 
 class TwitterBackend(ShareBackend):
     """Implements Tweepy API 
@@ -305,7 +298,7 @@ class TwitterBackend(ShareBackend):
         except:
             pass
         
-register_share_backend('twitter','TwitterBackend')
+#register_share_backend('twitter','TwitterBackend')
 
 
 class FacebookBackend(ShareBackend):
@@ -340,5 +333,5 @@ class FacebookBackend(ShareBackend):
         if response is None:
             raise ShareError, "Facebook outbox Failure"
 
-register_share_backend('facebook','FacebookBackend')
+#register_share_backend('facebook','FacebookBackend')
 
