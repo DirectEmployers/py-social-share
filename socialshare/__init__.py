@@ -39,7 +39,7 @@ def get_version():
 __version__ = get_version()
 
 
-class Share(object):                                                                                                                                                               
+class SocialShare(object):                                                                                                                                                               
     """Shares with an arbitrary list of networks and consumer keys. 
     
     Parameters:
