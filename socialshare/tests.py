@@ -1,5 +1,5 @@
 from backends import DebugBackend, ShareError
-from __init__ import register_share_backend, available_backends, Share
+from __init__ import register_share_backend, available_backends, SocialShare
 import unittest2
 
 class TestBackends(unittest2.TestCase):
@@ -93,7 +93,7 @@ class TestBackends(unittest2.TestCase):
         
     def test_bulk_share(self):
         """Test bulk share processing"""
-        share = Share(self.api_token, self.api_secret,
+        share = SocialShare(self.api_token, self.api_secret,
                       consumer_token=self.consumer_token, 
                       consumer_secret=self.consumer_secret,
                       headline=self.headline, excerpt=self.excerpt,
