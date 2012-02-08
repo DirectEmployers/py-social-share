@@ -95,6 +95,9 @@ class Share(object):
                          image_url=self.image_url, image_url_title=self.image_url_title, 
                          image_url_description=self.image_url_description)
             return api.share()
-            
-       
-    
+        
+    def do_single_share(self, network, consumer_token, consumer_secret):
+        """Shares using a single network"""
+        self.shares = {'network':network, 'consumer_token':consumer_token,
+                       'consumer_secret':consumer_secret}
+        self.do_bulk_share()
