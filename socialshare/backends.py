@@ -11,8 +11,6 @@ backends.py -- implements a more universal social api that abstracts away the
                
 """
 
-
-
 class ShareError(Exception):
     """Used for social share fails."""
     def __init__(self, msg):
@@ -21,6 +19,23 @@ class ShareError(Exception):
 
     def __str__(self):
         return "ShareError", self.message or None
+
+
+# initialize backends
+available_backends ={}
+
+
+def register_share_backend(network, class_name):
+    """Registers a new social sharing backend
+    
+    Parameters:
+    network -- name of the social network in lowercase. Something like twitter.
+    class_name -- the class that implements the share api"""
+    available_backends[network] = class_name
+
+register_share_backend('linkedin','LinkedInBackend')
+register_share_backend('twitter','TwitterBackend')
+register_share_backend('facebook','FacebookBackend')
 
 class ShareBackend(object):
     """Base class for share backends."""
@@ -70,8 +85,14 @@ class ShareBackend(object):
         self.message = message.strip()
         # truncate at 128 characters
         self.headline = headline[0:128].strip()
+        # If there is no excerpt use the headline
+        if not hasattr(self, 'excerpt'):
+            excerpt = self.headline
+        # if there is no tweet defined... create one.
         self.excerpt = excerpt.strip()
-        # truncate tweet if it is too long
+        if not hasattr(self, 'tweet'):
+            tweet = headline [0:160]
+        # truncate tweet if it is too long        
         self.tweet = tweet[0:160].strip()
         self.url = u'%s' % url.strip()
         self.url_title = url_title
@@ -168,35 +189,35 @@ class LinkedInBackend(ShareBackend):
     LinkedIn Specific Settings:
     visibility -- "connections_only", "anyone" (default) 
     """
-    def __init__(self, callback_url="http://localhost", visibility="anyone"):
-        super(LinkedinBackend, self).__init__(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(LinkedInBackend, self).__init__( *args, **kwargs)
         # Handle custom parameters for backend
-        self.callback_url = callback_url
-        self.visibility = visibility
+        self.callback_url = kwargs.get('callback_url') or ''
+        self.visibility = kwargs.get('visibility') or 'anyone'
         # instantiate a linkedin API. 
         from linkedin import linkedin
         # First instantiate the api object.
         self.api = linkedin.LinkedIn(api_key=self.api_token, 
-            api_secret=self.api_secret, callback_url='callback_url')
+            api_secret=self.api_secret, callback_url='http://localhost.com')
         # Force api to use a stored token/secret instead of getting one.
         # (Due to the way Python-LinkedIN is put together)
         self.api._access_token = self.consumer_token
-        self.api._access_secret = self.consumer_secret
+        self.api._access_token_secret = self.consumer_secret
 
     def _share(self, connections_only=True):
         """Shares a URL via LinkedIn's API. No web browser required."""
         # set visibility to connections-only or something else...
         if connections_only:
-            v = 'connections-only'
+            visibility = 'connections-only'
         else:
-            v = 'everyone'
+            visibility = 'everyone'
             
         result = self.api.share_update(comment=self.message, 
                                        title=self.headline,
                                        submitted_url=self.url, 
                                        submitted_image_url=self.image_url,
                                        description=self.excerpt, 
-                                       visibility=v)         
+                                       visibility=visibility)         
         # python-linkedin doesn't do exceptions so we have to check for errors.
         if result == False:
             raise ShareError, self.api.get_error()
@@ -215,7 +236,6 @@ class LinkedInBackend(ShareBackend):
         if result == False:
             raise ShareError, self.api.get_error()
 
-#register_share_backend('linkedin','LinkedInBackend')
 
 class TwitterBackend(ShareBackend):
     """Implements Tweepy API 
@@ -229,16 +249,16 @@ class TwitterBackend(ShareBackend):
     Twitter Specific Settings:
     use_tco -- True or False, use Twitter's t.co shortner.
     """
-    def __init__(self, use_tco=True):
+    def __init__(self, *args, **kwargs):
         super(TwitterBackend, self).__init__(*args, **kwargs)
         # handle twitter custom parameters
-        self.use_tco=use_tco
+        self.use_tco= kwargs.get('use_tco') or True
         # create a tweepy API
         from tweepy import API, OAuthHandler
         auth = OAuthHandler(self.consumer_token, self.consumer_secret)
         auth.set_access_token(self.api_token, self.api_secret)
         # Set up API
-        api = API(auth)
+        self.api = API(auth)
 
     def send_message(self, use_tco = 'true'):
         """Processes and sends direct message.
@@ -262,13 +282,10 @@ class TwitterBackend(ShareBackend):
               Twitter usernames can change, Twitter IDs do not.
         """
         # Loop throught the to's
+        from tweepy.error import TweepError
         for t in self.to:
-            # Fail very silently for now.
-            # TODO: Wire into python logging.
-            try:
-                self.api.send_direct_message(user=t, text=self.tweet)
-            except:
-                pass
+            self.api.send_direct_message(user=t, text=self.tweet)
+
 
     def _clean_tweet(self, use_tco=True):
         """Creates tweets by truncating subject at appropriate length.
@@ -290,34 +307,29 @@ class TwitterBackend(ShareBackend):
         
         Note: Tweeting is the same as "updating your status".
         """
-        
-        # Fail very silently for now
-        # TODO: Wire into python logging.
-        try:
-            self.api.update_status(status=self.tweet)
-        except:
-            pass
-        
-#register_share_backend('twitter','TwitterBackend')
+        result = self.api.update_status(status=self.tweet)
 
 
 class FacebookBackend(ShareBackend):
     """Implements Facebook backend"""
-    def __init__():
-        super(FacebookBackend, self).init(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(FacebookBackend, self).__init__(*args, **kwargs)
         # Create a Facebook social graph API using facepy.     
         from facepy import GraphAPI
-        self.api = facepy.GraphAPI()
-        self.api.oauth_token = facebook_consumer_key
+        self.api = GraphAPI()
+        self.api.oauth_token = self.consumer_token
 
     def _share(self):
         """Implements sharing on Facebook by making wall posts."""
         # send the message
-        
+        # TODO add support for icons to posts and messages
         response = self.api.post(path='me/feed',
-                                 message=self.message,
+                                 message=self.excerpt,
                                  picture=self.image_url or None,
-                                 link = self.url or None)
+                                 caption = self.image_url_title, 
+                                 link = self.url or None,
+                                 name=self.url_title,
+                                 description=self.url_description)
         if response is None:
             raise ShareError, "Facebook post to feed failed."
 
@@ -333,5 +345,4 @@ class FacebookBackend(ShareBackend):
         if response is None:
             raise ShareError, "Facebook outbox Failure"
 
-#register_share_backend('facebook','FacebookBackend')
 

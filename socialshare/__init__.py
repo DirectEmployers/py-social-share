@@ -6,16 +6,7 @@ Step 1: Register your backends by calling register_share_backend
 
 import backends
 
-available_backends ={}
 
-def register_share_backend(network, class_name):
-    """Registers a new social sharing backend
-    
-    Parameters:
-    network -- name of the social network in lowercase. Something like twitter.
-    class_name -- the class that implements the share api"""
-    available_backends[network] = class_name
-        
 __version_info__ = {
     'major': 0,
     'minor': 2,
@@ -66,6 +57,8 @@ class SocialShare(object):
         # shelf everything for future use
         self.api_token = api_token
         self.api_secret = api_secret
+        self.consumer_secret = consumer_secret
+        self.consumer_token = consumer_token
         self.message = message
         self.headline = headline
         self.excerpt = excerpt
@@ -81,9 +74,9 @@ class SocialShare(object):
     def do_bulk_share(self):
         """Shares using all backends in self.shares."""
         for share in self.shares:
-            c_t = share['consumer_token'] or consumer_token
-            c_s = share['consumer_secret'] or consumer_secret
-            class_ = getattr(backends, available_backends[share['network']])
+            c_t = share['consumer_token'] or self.consumer_token
+            c_s = share['consumer_secret'] or self.consumer_secret
+            class_ = getattr(backends, backends.available_backends[share['network']])
             api = class_(self.api_token, self.api_secret, 
                          consumer_token=c_t, consumer_secret=c_s,
                          message=self.message,
@@ -94,10 +87,18 @@ class SocialShare(object):
                          url_description=self.url_description, 
                          image_url=self.image_url, image_url_title=self.image_url_title, 
                          image_url_description=self.image_url_description)
+            print backends.available_backends[share['network']], '\n', api
             return api.share()
         
     def do_single_share(self, network, consumer_token, consumer_secret):
-        """Shares using a single network"""
-        self.shares = {'network':network, 'consumer_token':consumer_token,
-                       'consumer_secret':consumer_secret}
-        self.do_bulk_share()
+        """Shares using a single network
+        
+        arguments:        
+        network: A string containing a single valid social network
+        consumer_token: user's Oauth consumer token
+        consumer_secret: user's Oauth consumer secret
+        """
+        
+        self.shares = [{'network':network, 'consumer_token':consumer_token,
+                       'consumer_secret':consumer_secret}]
+        result = self.do_bulk_share()
